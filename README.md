@@ -1,11 +1,5 @@
 ## Measured Results
-### Example: Audit Trail for an Escalated Transaction
 
-![Audit trail example](docs/audit_trail_example.png)
-
-Every agent decision — classification, each retry attempt, and any stopping-rule
-trigger — is logged with a timestamp and explanation, giving a full explainable
-trace for every transaction.
 Across 3 independent runs of a 50-transaction synthetic failed-payment batch:
 
 | Run | Revenue at Risk | Revenue Recovered | Recovery Rate |
@@ -30,10 +24,38 @@ the `/webhook/payment-failure` endpoint's Redis-queuing step. The 500 is deliber
 the handler returns it specifically so a real payment gateway's webhook retry logic would
 re-deliver the event — and is consistent with standard webhook delivery semantics under load.
 
+### Example: Audit Trail for an Escalated Transaction
+
+![Audit trail example](docs/audit_trail_example.png)
+
+Every agent decision — classification, each retry attempt, and any stopping-rule
+trigger — is logged with a timestamp and explanation, giving a full explainable
+trace for every transaction.
+
 ### Reproducing these results
+
 ```bash
 python -m scripts.wipe_db
 # start Celery worker + FastAPI app in separate terminals, then:
 python -m scripts.simulate_events
 # wait for the dashboard to show "Still Retrying: ₹0", then check /analytics
 ```
+
+## Testing
+
+Two automated tests cover the core correctness guarantees this track is judged on:
+
+- **`tests/test_idempotency.py`** — proves that sending the same webhook payload
+  (same `idempotency_key`) twice results in exactly one `Transaction` row, not two.
+- **`tests/test_stopping_rule.py`** — proves the retry loop actually halts at
+  `MAX_RETRIES` and escalates to `NEEDS_MANUAL_REVIEW`, and that transactions
+  below the limit correctly reschedule instead.
+
+Run against a dedicated test database (`revenue_recovery_test`), isolated from
+demo data:
+
+```bash
+pytest -v
+```
+
+All 3 tests currently pass.
