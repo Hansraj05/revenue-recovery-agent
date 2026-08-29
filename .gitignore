@@ -1,0 +1,33 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Database & Migrations
+alembic.ini.bak
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+
+# IDEs & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
