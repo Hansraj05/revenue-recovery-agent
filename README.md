@@ -1,5 +1,11 @@
 ## Measured Results
+### Example: Audit Trail for an Escalated Transaction
 
+![Audit trail example](docs/audit_trail_example.png)
+
+Every agent decision — classification, each retry attempt, and any stopping-rule
+trigger — is logged with a timestamp and explanation, giving a full explainable
+trace for every transaction.
 Across 3 independent runs of a 50-transaction synthetic failed-payment batch:
 
 | Run | Revenue at Risk | Revenue Recovered | Recovery Rate |
