@@ -1,8 +1,13 @@
-import streamlit as st
-import requests
-import pandas as pd
+import os
 
-API_BASE = "http://127.0.0.1:8000/api/v1"
+import pandas as pd
+import requests
+import streamlit as st
+
+# Set API_BASE in Render's environment settings; falls back to localhost for local runs.
+API_BASE = os.getenv("API_BASE", "http://127.0.0.1:8000/api/v1").rstrip("/")
+# A free Render service can take ~60s to wake from sleep, so allow a long timeout.
+REQUEST_TIMEOUT = 90
 
 st.set_page_config(page_title="AI Revenue Recovery", layout="wide")
 st.title("⚡ AI Revenue Recovery Agent")
@@ -11,7 +16,7 @@ if st.button("Refresh Data"):
     st.rerun()
 
 try:
-    analytics = requests.get(f"{API_BASE}/analytics").json()
+    analytics = requests.get(f"{API_BASE}/analytics", timeout=REQUEST_TIMEOUT).json()
 
     col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Total Webhooks", analytics["total_transactions"])
@@ -22,7 +27,7 @@ try:
 
     st.divider()
     st.subheader("📋 Transactions")
-    transactions = requests.get(f"{API_BASE}/transactions").json()
+    transactions = requests.get(f"{API_BASE}/transactions", timeout=REQUEST_TIMEOUT).json()
 
     if transactions:
         df = pd.DataFrame(transactions)
@@ -32,7 +37,7 @@ try:
         st.subheader("🔍 Audit Trail")
         selected_id = st.number_input("Transaction ID", min_value=1, step=1, value=int(df["id"].iloc[0]))
         if st.button("View Audit Trail"):
-            audit_resp = requests.get(f"{API_BASE}/transactions/{selected_id}/audit")
+            audit_resp = requests.get(f"{API_BASE}/transactions/{selected_id}/audit", timeout=REQUEST_TIMEOUT)
             if audit_resp.status_code == 200:
                 audit_df = pd.DataFrame(audit_resp.json())
                 st.dataframe(audit_df[["created_at", "action", "detail"]], use_container_width=True, hide_index=True)
@@ -42,4 +47,7 @@ try:
         st.info("No payment failures detected yet. Run the simulation script to populate data.")
 
 except Exception as e:
-    st.error(f"Cannot connect to the backend. Ensure FastAPI is running on port 8000. Error: {e}")
+    st.error(
+        f"Cannot reach the backend at {API_BASE}. If it's a free Render service it may be "
+        f"waking up (about 1 minute), so click Refresh. Error: {e}"
+    )
