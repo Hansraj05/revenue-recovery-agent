@@ -1,5 +1,5 @@
 import random
-from celery import shared_task
+from app.tasks.celery_app import celery_app
 from app.core.database import SyncSessionLocal
 from app.models.transaction import Transaction, PaymentStatus
 from app.models.audit_log import AuditLog
@@ -27,7 +27,7 @@ def simulate_gateway_retry(failure_reason: str) -> bool:
     return random.random() < 0.55
 
 
-@shared_task(bind=True)
+@celery_app.task(bind=True)
 def evaluate_recovery(self, transaction_id: int):
     """Step 1: classify the failure and decide the initial action."""
     with SyncSessionLocal() as db:
@@ -70,7 +70,7 @@ def evaluate_recovery(self, transaction_id: int):
         return f"{action} applied to transaction {transaction_id}"
 
 
-@shared_task(bind=True)
+@celery_app.task(bind=True)
 def execute_retry_attempt(self, transaction_id: int):
     """Step 2: actually attempt recovery, with a stopping rule on retry count."""
     with SyncSessionLocal() as db:

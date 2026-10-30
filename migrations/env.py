@@ -6,10 +6,14 @@ from app.models import Base
 from alembic import context
 from app.core.config import settings
 config = context.config
-config.set_main_option(
-    "sqlalchemy.url",
-    settings.database_url.replace("+asyncpg", "")
-)
+database_url = settings.database_url
+
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+database_url = database_url.replace("+asyncpg", "")
+
+config.set_main_option("sqlalchemy.url", database_url)
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 
