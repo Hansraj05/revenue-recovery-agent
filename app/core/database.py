@@ -8,21 +8,29 @@ from app.core.config import settings
 
 
 def _to_async_url(url: str) -> str:
-    """Render hands out plain postgresql:// URLs; the async engine needs +asyncpg."""
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
+
     if url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        url = url.replace(
+            "postgresql://", "postgresql+asyncpg://", 1
+        )
+
     return url
 
 
 def _to_sync_url(url: str) -> str:
-    """Celery workers use a sync driver (psycopg2): strip +asyncpg."""
-    url = url.replace("+asyncpg", "")
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
-    return url
 
+    url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
+
+    if url.startswith("postgresql://"):
+        url = url.replace(
+            "postgresql://", "postgresql+psycopg2://", 1
+        )
+
+    return url
 
 # --- Async engine: used by FastAPI request handlers ---
 engine = create_async_engine(_to_async_url(settings.database_url), echo=False, pool_pre_ping=True)

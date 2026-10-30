@@ -13,7 +13,13 @@ if database_url.startswith("postgres://"):
 
 database_url = database_url.replace("+asyncpg", "")
 
-config.set_main_option("sqlalchemy.url", database_url)
+database_url = settings.database_url
+database_url = database_url.split("://", 1)[1]
+
+config.set_main_option(
+    "sqlalchemy.url",
+    f"postgresql+psycopg2://{database_url}"
+)
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 
